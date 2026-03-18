@@ -29,47 +29,64 @@ def check_write_access(user, fiche):
 @fiches_bp.route('/mine', methods=['GET'])
 @jwt_required()
 def get_my_fiche():
-    user = get_current_user()
+    try:
+        user = get_current_user()
 
-    if user.role not in ['pilote_processus', 'dpo', 'rssi']:
-        return jsonify({'error': 'Accès non autorisé'}), 403
+        if user.role not in ['pilote_processus', 'dpo', 'rssi']:
+            return jsonify({'error': 'Accès non autorisé'}), 403
 
-    if user.role == 'pilote_processus':
-        fiche = FicheProcessus.query.filter_by(
-            organism_id=user.organism_id,
-            pilote_id=user.id
-        ).first()
-        if not fiche:
-            # Récupérer audit_type depuis l'organisme
-            org   = Organism.query.get(user.organism_id)
-            fiche = FicheProcessus(
-                organism_id = user.organism_id,
-                pilote_id   = user.id,
-                audit_type  = org.audit_type if org else 'iso27001',
-                intitule    = user.processus_pilote or 'Nouveau processus',
-                finalite    = '',
-                statut      = 'brouillon'
-            )
-            db.session.add(fiche)
-            db.session.commit()
-        return jsonify(fiche.to_dict()), 200
+        if user.role == 'pilote_processus':
+            fiche = FicheProcessus.query.filter_by(
+                organism_id=user.organism_id,
+                pilote_id=user.id
+            ).first()
 
-    # DPO : fiches soumis_dpo de son organisme
-    if user.role == 'dpo':
-        fiches = FicheProcessus.query.filter_by(
-            organism_id=user.organism_id,
-            statut='soumis_dpo'
-        ).all()
-        return jsonify([f.to_dict() for f in fiches]), 200
+            if not fiche:
+                org        = Organism.query.get(user.organism_id)
+                audit_type = (org.audit_type or 'iso27001') if org else 'iso27001'
+                print(f'DEBUG organism: {org}')
+                print(f'DEBUG audit_type: {audit_type}')
+                print(f'DEBUG user.organism_id: {user.organism_id}')
+                print(f'DEBUG user.processus_pilote: {user.processus_pilote}')
 
-    # RSSI : fiches soumis_rssi ou complete_dpo de son organisme
-    if user.role == 'rssi':
-        fiches = FicheProcessus.query.filter(
-            FicheProcessus.organism_id == user.organism_id,
-            FicheProcessus.statut.in_(['soumis_rssi', 'complete_dpo'])
-        ).all()
-        return jsonify([f.to_dict() for f in fiches]), 200
+                try:
+                    fiche = FicheProcessus(
+                        organism_id = user.organism_id,
+                        pilote_id   = user.id,
+                        audit_type  = audit_type,
+                        intitule    = user.processus_pilote or 'Nouveau processus',
+                        finalite    = '',
+                        statut      = 'brouillon'
+                    )
+                    db.session.add(fiche)
+                    db.session.commit()
+                    print(f'DEBUG fiche créée id: {fiche.id}')
+                except Exception as e:
+                    db.session.rollback()
+                    print(f'DEBUG erreur création fiche: {str(e)}')
+                    return jsonify({'error': f'Erreur création fiche : {str(e)}'}), 500
 
+            return jsonify(fiche.to_dict()), 200
+
+        if user.role == 'dpo':
+            fiches = FicheProcessus.query.filter_by(
+                organism_id=user.organism_id,
+                statut='soumis_dpo'
+            ).all()
+            return jsonify([f.to_dict() for f in fiches]), 200
+
+        if user.role == 'rssi':
+            fiches = FicheProcessus.query.filter(
+                FicheProcessus.organism_id == user.organism_id,
+                FicheProcessus.statut.in_(['soumis_rssi', 'complete_dpo'])
+            ).all()
+            return jsonify([f.to_dict() for f in fiches]), 200
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
 # ── GET ALL organisme ─────────────────────────────────────────────────────────
 @fiches_bp.route('/organism/<int:organism_id>', methods=['GET'])
 @jwt_required()

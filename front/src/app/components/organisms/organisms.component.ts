@@ -31,9 +31,8 @@ export class OrganismsComponent implements OnInit {
 
   form!: FormGroup;
 auditTypes = [
-  { value: 'smsi', label: 'SMSI (ISO 27001)' },
-  { value: 'pims', label: 'PIMS (ISO 27701)' },
-  { value: 'smsi_pims', label: 'SMSI + PIMS' }
+  { value: 'iso27001', label: 'SMSI (ISO 27001)' },
+  { value: 'iso27001', label: 'PIMS (ISO 27701)' }
 ];
   constructor(
     private fb: FormBuilder,
