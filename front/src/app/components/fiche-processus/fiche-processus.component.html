@@ -1,0 +1,761 @@
+<div class="fiche-page">
+
+  <!-- En-tête -->
+  <div class="fiche-header">
+    <div class="header-left">
+      <div class="fiche-badge" [class.badge-27701]="auditType === 'iso27701'">
+        {{ auditType === 'iso27701' ? 'ISO 27701 — PIMS' : 'ISO 27001 — SMSI' }}
+      </div>
+      <div>
+        <h1 class="fiche-title">{{ f1.get('intitule')?.value || 'Fiche processus' }}</h1>
+        <p class="fiche-sub">{{ currentUser?.prenom }} {{ currentUser?.nom }} · Pilote de processus</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="progress-wrap">
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="progressPercent"></div>
+        </div>
+        <span class="progress-lbl">{{ progressPercent }}%</span>
+      </div>
+      <button class="btn-submit" [disabled]="!canSubmit" (click)="soumettre()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+          <path d="M1 6.5L5 10.5L12 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        Soumettre la fiche
+      </button>
+    </div>
+  </div>
+
+  <!-- Toasts -->
+  <div class="toast-success" *ngIf="success">✓ {{ success }}</div>
+  <div class="alert-error"   *ngIf="error">{{ error }}</div>
+
+  <div class="fiche-layout">
+
+    <!-- Nav sections -->
+    <nav class="sections-nav">
+      <div *ngFor="let sec of sections"
+  class="sec-item"
+  [class.active]="activeSection === sec.id"
+  [class.done]="isSaved(sec.id)"
+  (click)="setSection(sec.id)">
+  <div class="sec-num">
+    <svg *ngIf="isSaved(sec.id)" width="12" height="12" viewBox="0 0 12 12" fill="none">
+      <circle cx="6" cy="6" r="5" fill="#3B6D11"/>
+      <path d="M3.5 6L5.2 7.8L8.5 4.5" stroke="white" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>
+    <span *ngIf="!isSaved(sec.id)">{{ sec.num }}</span>
+  </div>
+  <span class="sec-label">{{ sec.label }}</span>
+</div>
+    </nav>
+
+    <!-- Contenu -->
+    <div class="fiche-content">
+
+      <!-- ══════════════════════════════════════════════════════
+           S1 — IDENTIFICATION
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's1'">
+        <div class="sec-header">
+          <h2>01 — Identification du processus</h2>
+          <p>Définir les informations générales d'identification du processus.</p>
+        </div>
+        <form [formGroup]="f1">
+          <div class="form-block">
+            <div class="two-cols">
+              <div class="field required">
+                <label>Intitulé du processus</label>
+                <input formControlName="intitule" placeholder="Ex: Gestion des incidents de sécurité"/>
+                <span class="err" *ngIf="f1.get('intitule')?.invalid && f1.get('intitule')?.touched">Requis</span>
+              </div>
+              <div class="field">
+                <label>Code / Référence</label>
+                <input formControlName="code" placeholder="Ex: PROC-SEC-001"/>
+              </div>
+            </div>
+            <div class="two-cols">
+              <div class="field required">
+                <label>Type de processus</label>
+                <select formControlName="type_processus">
+                  <option value="">-- Sélectionner --</option>
+                  <option value="management">Management</option>
+                  <option value="realisation">Réalisation</option>
+                  <option value="support">Support</option>
+                </select>
+                <span class="err" *ngIf="f1.get('type_processus')?.invalid && f1.get('type_processus')?.touched">Requis</span>
+              </div>
+              <div class="field">
+                <label>Domaine</label>
+                <input formControlName="domaine" placeholder="Ex: Sécurité des SI, Protection des données"/>
+              </div>
+            </div>
+            <div class="two-cols">
+              <div class="field">
+                <label>Version</label>
+                <input formControlName="version" placeholder="v1.0"/>
+              </div>
+            </div>
+            <div class="field">
+              <label>Activités couvertes</label>
+              <textarea formControlName="activites" rows="3"
+                placeholder="Décrire les grandes activités couvertes par ce processus..."></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S2 — FINALITÉ ET BÉNÉFICIAIRES
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's2'">
+        <div class="sec-header">
+          <h2>02 — Finalité et bénéficiaires</h2>
+          <p>Définir la raison d'être du processus et identifier ses bénéficiaires.</p>
+        </div>
+        <form [formGroup]="f2">
+          <div class="form-block">
+            <div class="field required">
+              <label>Finalité du processus</label>
+              <textarea formControlName="finalite" rows="4"
+                placeholder="Décrire l'objectif principal et la valeur ajoutée de ce processus..."></textarea>
+              <span class="err" *ngIf="f2.get('finalite')?.invalid && f2.get('finalite')?.touched">Requis</span>
+            </div>
+          </div>
+          <div class="form-block">
+            <div class="block-title">Bénéficiaires</div>
+            <div formArrayName="beneficiaires">
+              <div *ngFor="let b of beneficiaires.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Bénéficiaire</label>
+                    <input formControlName="nom" placeholder="Ex: Direction, Équipe IT, Clients..."/>
+                    <span class="err" *ngIf="b.get('nom')?.invalid && b.get('nom')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Type</label>
+                    <select formControlName="type">
+                      <option value="interne">Interne</option>
+                      <option value="externe">Externe</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Attentes / besoins</label>
+                  <input formControlName="attentes" placeholder="Qu'attend ce bénéficiaire du processus ?"/>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(beneficiaires, i)" *ngIf="beneficiaires.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addBeneficiaire()">+ Ajouter un bénéficiaire</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S3 — DÉCLENCHEURS
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's3'">
+        <div class="sec-header">
+          <h2>03 — Déclencheurs du processus</h2>
+          <p>Identifier les événements ou conditions qui déclenchent ce processus.</p>
+        </div>
+        <form [formGroup]="f3">
+          <div class="form-block">
+            <div class="block-title">Liste des déclencheurs</div>
+            <div formArrayName="declencheurs">
+              <div *ngFor="let d of declencheurs.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:3">
+                    <label>Description du déclencheur</label>
+                    <input formControlName="description"
+                      placeholder="Ex: Détection d'une alerte de sécurité, Signalement utilisateur..."/>
+                    <span class="err" *ngIf="d.get('description')?.invalid && d.get('description')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Type</label>
+                    <select formControlName="type">
+                      <option value="evenement">Événement</option>
+                      <option value="periodique">Périodique</option>
+                      <option value="demande">Demande</option>
+                      <option value="seuil">Seuil atteint</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(declencheurs, i)" *ngIf="declencheurs.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addDeclencheur()">+ Ajouter un déclencheur</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S4 — ENTRÉES / SORTIES
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's4'">
+        <div class="sec-header">
+          <h2>04 — Éléments d'entrée et de sortie</h2>
+          <p>Définir les flux entrants et sortants du processus.</p>
+        </div>
+        <form [formGroup]="f4">
+
+          <div class="form-block">
+            <div class="block-title">Éléments d'entrée</div>
+            <div formArrayName="elements_entree">
+              <div *ngFor="let e of entreesArr.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Description</label>
+                    <input formControlName="description" placeholder="Ex: Alerte SIEM, Ticket incident..."/>
+                    <span class="err" *ngIf="e.get('description')?.invalid && e.get('description')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Source / Fournisseur</label>
+                    <input formControlName="source" placeholder="Ex: SOC, Utilisateur"/>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Format</label>
+                    <input formControlName="format" placeholder="Ex: Email, Ticket, Rapport"/>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(entreesArr, i)" *ngIf="entreesArr.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addEntree()">+ Ajouter une entrée</button>
+          </div>
+
+          <div class="form-block">
+            <div class="block-title">Sorties intentionnelles</div>
+            <div formArrayName="elements_sortie_intentionnels">
+              <div *ngFor="let s of sortiesInt.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Description</label>
+                    <input formControlName="description" placeholder="Ex: Rapport d'incident clôturé..."/>
+                    <span class="err" *ngIf="s.get('description')?.invalid && s.get('description')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Destinataire</label>
+                    <input formControlName="source" placeholder="Ex: Direction, RSSI"/>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Format</label>
+                    <input formControlName="format" placeholder="Ex: PDF, Email"/>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(sortiesInt, i)" *ngIf="sortiesInt.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addSortieInt()">+ Ajouter une sortie intentionnelle</button>
+          </div>
+
+          <div class="form-block">
+            <div class="block-title">Sorties non intentionnelles</div>
+            <div formArrayName="elements_sortie_non_intentionnels">
+              <div *ngFor="let s of sortiesNonInt.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Description</label>
+                    <input formControlName="description" placeholder="Ex: Données corrompues, Retard de traitement..."/>
+                    <span class="err" *ngIf="s.get('description')?.invalid && s.get('description')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Impact</label>
+                    <input formControlName="source" placeholder="Ex: Perte de données"/>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(sortiesNonInt, i)" *ngIf="sortiesNonInt.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addSortieNonInt()">+ Ajouter une sortie non intentionnelle</button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S5 — INFORMATIONS DOCUMENTÉES
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's5'">
+        <div class="sec-header">
+          <h2>05 — Informations documentées</h2>
+          <p>Lister les procédures, modes opératoires et documents associés.</p>
+        </div>
+        <form [formGroup]="f5">
+          <div class="form-block">
+            <div formArrayName="informations_documentees">
+              <div *ngFor="let d of infoDocs.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Titre du document</label>
+                    <input formControlName="titre" placeholder="Ex: Procédure de gestion des incidents P-INC-01"/>
+                    <span class="err" *ngIf="d.get('titre')?.invalid && d.get('titre')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Type</label>
+                    <select formControlName="type">
+                      <option value="procedure">Procédure</option>
+                      <option value="mode_operatoire">Mode opératoire</option>
+                      <option value="politique">Politique</option>
+                      <option value="formulaire">Formulaire</option>
+                      <option value="charte">Charte</option>
+                      <option value="enregistrement">Enregistrement</option>
+                      <option value="autre">Autre</option>
+                    </select>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Référence</label>
+                    <input formControlName="reference" placeholder="Ex: P-INC-01 v2.1"/>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Description</label>
+                  <input formControlName="description" placeholder="Objet et utilisation de ce document..."/>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(infoDocs, i)" *ngIf="infoDocs.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addInfoDoc()">+ Ajouter un document</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S6 — CONTRAINTES
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's6'">
+        <div class="sec-header">
+          <h2>06 — Contraintes du processus</h2>
+          <p>Identifier les contraintes réglementaires, internes, temporelles et techniques.</p>
+        </div>
+        <form [formGroup]="f6">
+
+          <div class="form-block">
+            <div class="block-title">Contraintes réglementaires</div>
+            <div formArrayName="contraintes_reglementaires">
+              <div *ngFor="let c of contraintesReg.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:3">
+                    <label>Description</label>
+                    <input formControlName="description" placeholder="Ex: RGPD Art. 33 — Notification sous 72h"/>
+                    <span class="err" *ngIf="c.get('description')?.invalid && c.get('description')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Source</label>
+                    <input formControlName="source" placeholder="Ex: RGPD, ISO 27001"/>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Impact</label>
+                    <select formControlName="impact">
+                      <option value="faible">Faible</option>
+                      <option value="moyen">Moyen</option>
+                      <option value="élevé">Élevé</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(contraintesReg, i)" *ngIf="contraintesReg.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addContrainteReg()">+ Ajouter une contrainte réglementaire</button>
+          </div>
+
+          <div class="form-block">
+            <div class="block-title">Autres contraintes</div>
+            <div class="field">
+              <label>Contraintes internes</label>
+              <textarea formControlName="contraintes_internes" rows="2"
+                placeholder="Ex: Budget limité, politique interne de sécurité..."></textarea>
+            </div>
+            <div class="field">
+              <label>Contraintes temporelles</label>
+              <textarea formControlName="contraintes_temporelles" rows="2"
+                placeholder="Ex: SLA 4h, traitement sous 24h..."></textarea>
+            </div>
+            <div class="field">
+              <label>Contraintes techniques</label>
+              <textarea formControlName="contraintes_techniques" rows="2"
+                placeholder="Ex: Compatibilité système, infrastructure existante..."></textarea>
+            </div>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S7 — PERSONNEL ET RESSOURCES
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's7'">
+        <div class="sec-header">
+          <h2>07 — Personnel et ressources</h2>
+          <p>Identifier les acteurs impliqués et les ressources nécessaires.</p>
+        </div>
+        <form [formGroup]="f7">
+
+          <div class="form-block">
+            <div class="block-title">Acteurs du processus</div>
+            <div formArrayName="acteurs">
+              <div *ngFor="let a of acteurs.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Rôle / Fonction</label>
+                    <input formControlName="role" placeholder="Ex: RSSI, Analyste SOC, Responsable IT"/>
+                    <span class="err" *ngIf="a.get('role')?.invalid && a.get('role')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:2">
+                    <label>Responsabilité dans le processus</label>
+                    <input formControlName="responsabilite" placeholder="Ex: Responsable, Exécutant, Informé..."/>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Compétences requises</label>
+                  <input formControlName="competences" placeholder="Ex: Connaissance ISO 27001, analyse forensique..."/>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(acteurs, i)" *ngIf="acteurs.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addActeur()">+ Ajouter un acteur</button>
+          </div>
+
+          <div class="form-block">
+            <div class="block-title">Ressources</div>
+            <div formArrayName="ressources">
+              <div *ngFor="let r of ressources.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Nom de la ressource</label>
+                    <input formControlName="nom" placeholder="Ex: SIEM Splunk, Équipe réponse incident"/>
+                    <span class="err" *ngIf="r.get('nom')?.invalid && r.get('nom')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Type</label>
+                    <select formControlName="type">
+                      <option value="humain">Humain</option>
+                      <option value="logiciel">Logiciel</option>
+                      <option value="materiel">Matériel</option>
+                      <option value="infrastructure">Infrastructure</option>
+                      <option value="financier">Financier</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Description / utilisation</label>
+                  <input formControlName="description" placeholder="Comment cette ressource est-elle utilisée ?"/>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(ressources, i)" *ngIf="ressources.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addRessource()">+ Ajouter une ressource</button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S8 — OBJECTIFS ET KPI
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's8'">
+        <div class="sec-header">
+          <h2>08 — Objectifs et indicateurs de performance</h2>
+          <p>Définir les KPI pour mesurer l'efficacité et l'atteinte des objectifs.</p>
+        </div>
+        <form [formGroup]="f8">
+          <div class="form-block">
+            <div formArrayName="objectifs_kpi">
+              <div *ngFor="let k of kpis.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="kpi-num">KPI {{ i + 1 }}</div>
+                <div class="field required">
+                  <label>Intitulé de l'indicateur</label>
+                  <input formControlName="intitule" placeholder="Ex: Délai moyen de résolution des incidents"/>
+                  <span class="err" *ngIf="k.get('intitule')?.invalid && k.get('intitule')?.touched">Requis</span>
+                </div>
+                <div class="array-row-fields">
+                  <div class="field" style="flex:1">
+                    <label>Unité de mesure</label>
+                    <input formControlName="mesure" placeholder="Ex: heures, %, nombre"/>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Cible / Seuil</label>
+                    <input formControlName="cible" placeholder="Ex: &lt; 4h, &gt; 95%, 0"/>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Fréquence de mesure</label>
+                    <select formControlName="frequence">
+                      <option value="quotidienne">Quotidienne</option>
+                      <option value="hebdomadaire">Hebdomadaire</option>
+                      <option value="mensuelle">Mensuelle</option>
+                      <option value="trimestrielle">Trimestrielle</option>
+                      <option value="annuelle">Annuelle</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(kpis, i)" *ngIf="kpis.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addKpi()">+ Ajouter un KPI</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S9 — SURVEILLANCE
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's9'">
+        <div class="sec-header">
+          <h2>09 — Surveillance et mesure</h2>
+          <p>Définir les moyens de surveillance pour garantir le bon fonctionnement.</p>
+        </div>
+        <form [formGroup]="f9">
+
+          <div class="form-block">
+            <div class="block-title">Moyens de surveillance</div>
+            <div formArrayName="moyens_surveillance">
+              <div *ngFor="let s of surveillances.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Moyen de surveillance</label>
+                    <input formControlName="moyen" placeholder="Ex: Revue mensuelle des incidents, Audit interne..."/>
+                    <span class="err" *ngIf="s.get('moyen')?.invalid && s.get('moyen')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Fréquence</label>
+                    <select formControlName="frequence">
+                      <option value="quotidienne">Quotidienne</option>
+                      <option value="hebdomadaire">Hebdomadaire</option>
+                      <option value="mensuelle">Mensuelle</option>
+                      <option value="trimestrielle">Trimestrielle</option>
+                      <option value="annuelle">Annuelle</option>
+                    </select>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Responsable</label>
+                    <input formControlName="responsable" placeholder="Ex: RSSI, Pilote"/>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(surveillances, i)" *ngIf="surveillances.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addSurveillance()">+ Ajouter un moyen de surveillance</button>
+          </div>
+
+          <div class="form-block">
+            <div class="block-title">Moyens de mesure</div>
+            <div formArrayName="moyens_mesure">
+              <div *ngFor="let m of mesures.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Indicateur mesuré</label>
+                    <input formControlName="indicateur" placeholder="Ex: Taux de résolution en temps voulu"/>
+                    <span class="err" *ngIf="m.get('indicateur')?.invalid && m.get('indicateur')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Outil / méthode</label>
+                    <input formControlName="outil" placeholder="Ex: Tableau de bord SIEM, Excel"/>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Périodicité</label>
+                    <select formControlName="periodicite">
+                      <option value="mensuelle">Mensuelle</option>
+                      <option value="trimestrielle">Trimestrielle</option>
+                      <option value="annuelle">Annuelle</option>
+                    </select>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(mesures, i)" *ngIf="mesures.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addMesure()">+ Ajouter un moyen de mesure</button>
+          </div>
+
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S10 — INTERACTIONS
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's10'">
+        <div class="sec-header">
+          <h2>10 — Interactions avec d'autres processus</h2>
+          <p>Cartographier les flux entrants et sortants avec les processus liés.</p>
+        </div>
+        <form [formGroup]="f10">
+          <div class="form-block">
+            <div formArrayName="interactions">
+              <div *ngFor="let inter of interactions.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="array-row-fields">
+                  <div class="field required" style="flex:2">
+                    <label>Processus lié</label>
+                    <input formControlName="processus" placeholder="Ex: Gestion des risques, Contrôle d'accès..."/>
+                    <span class="err" *ngIf="inter.get('processus')?.invalid && inter.get('processus')?.touched">Requis</span>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Type de flux</label>
+                    <select formControlName="type">
+                      <option value="entrant">Entrant</option>
+                      <option value="sortant">Sortant</option>
+                      <option value="bidirectionnel">Bidirectionnel</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Description de l'interaction</label>
+                  <input formControlName="description"
+                    placeholder="Décrire ce qui est échangé entre ces deux processus..."/>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(interactions, i)" *ngIf="interactions.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addInteraction()">+ Ajouter une interaction</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S11 — RISQUES
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's11'">
+        <div class="sec-header">
+          <h2>11 — Risques associés au processus</h2>
+          <p>Identifier et évaluer les risques. Note = Probabilité × Impact (1 à 3).</p>
+        </div>
+        <form [formGroup]="f11">
+
+          <!-- Récapitulatif risque dominant -->
+          <div class="risk-summary" *ngIf="f11.get('note_max')?.value">
+            <div class="risk-summary-item">
+              <span class="rs-label">Note maximale</span>
+              <span class="rs-value" [class]="getNoteClass(f11.get('note_max')?.value)">
+                {{ f11.get('note_max')?.value }}
+              </span>
+            </div>
+            <div class="risk-summary-item">
+              <span class="rs-label">Risque dominant</span>
+              <span class="rs-value-text">{{ f11.get('risque_dominant')?.value || '—' }}</span>
+            </div>
+          </div>
+
+          <div class="form-block">
+            <div formArrayName="risques">
+              <div *ngFor="let r of risques.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="risk-row-header">
+                  <span class="risk-tag">Risque {{ i + 1 }}</span>
+                  <span class="note-badge" [class]="getNoteClass(r.get('note')?.value)">
+                    Note : {{ r.get('note')?.value }}
+                  </span>
+                </div>
+                <div class="field required">
+                  <label>Description du risque</label>
+                  <textarea formControlName="description" rows="2"
+                    placeholder="Ex: Indisponibilité du SIEM empêchant la détection..."></textarea>
+                  <span class="err" *ngIf="r.get('description')?.invalid && r.get('description')?.touched">Requis</span>
+                </div>
+                <div class="array-row-fields">
+                  <div class="field" style="flex:1">
+                    <label>Probabilité (1-3)</label>
+                    <select formControlName="probabilite" (change)="updateNoteRisque(i)">
+                      <option value="1">1 — Faible</option>
+                      <option value="2">2 — Moyen</option>
+                      <option value="3">3 — Élevé</option>
+                    </select>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Impact (1-3)</label>
+                    <select formControlName="impact" (change)="updateNoteRisque(i)">
+                      <option value="1">1 — Faible</option>
+                      <option value="2">2 — Moyen</option>
+                      <option value="3">3 — Élevé</option>
+                    </select>
+                  </div>
+                  <div class="field" style="flex:1">
+                    <label>Traitement</label>
+                    <select formControlName="traitement">
+                      <option value="accepter">Accepter</option>
+                      <option value="reduire">Réduire</option>
+                      <option value="transferer">Transférer</option>
+                      <option value="eviter">Éviter</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Mesure de traitement</label>
+                  <textarea formControlName="mesure" rows="2"
+                    placeholder="Décrire la mesure mise en place pour traiter ce risque..."></textarea>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(risques, i)" *ngIf="risques.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addRisque()">+ Ajouter un risque</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ══════════════════════════════════════════════════════
+           S12 — OPPORTUNITÉS
+      ══════════════════════════════════════════════════════ -->
+      <div *ngIf="activeSection === 's12'">
+        <div class="sec-header">
+          <h2>12 — Opportunités d'amélioration</h2>
+          <p>Identifier les opportunités pour améliorer l'efficacité du processus.</p>
+        </div>
+        <form [formGroup]="f12">
+          <div class="form-block">
+            <div formArrayName="opportunites">
+              <div *ngFor="let o of opportunites.controls; let i = index"
+                [formGroupName]="i" class="array-row">
+                <div class="field required">
+                  <label>Description de l'opportunité</label>
+                  <textarea formControlName="description" rows="2"
+                    placeholder="Ex: Automatisation de la détection via ML, Formation avancée des équipes..."></textarea>
+                  <span class="err" *ngIf="o.get('description')?.invalid && o.get('description')?.touched">Requis</span>
+                </div>
+                <div class="array-row-fields">
+                  <div class="field" style="flex:1">
+                    <label>Bénéfice attendu</label>
+                    <input formControlName="benefice" placeholder="Ex: Réduction délai de 50%"/>
+                  </div>
+                  <div class="field" style="flex:2">
+                    <label>Action proposée</label>
+                    <input formControlName="action" placeholder="Ex: Intégrer un outil d'orchestration SOAR"/>
+                  </div>
+                </div>
+                <button type="button" class="btn-rm" (click)="rm(opportunites, i)" *ngIf="opportunites.length > 1">×</button>
+              </div>
+            </div>
+            <button type="button" class="btn-add" (click)="addOpportunite()">+ Ajouter une opportunité</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Footer -->
+      <div class="sec-footer">
+        <div class="completion-msg" *ngIf="progressPercent === 100">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <circle cx="6.5" cy="6.5" r="5.5" fill="#3B6D11"/>
+            <path d="M3.5 6.5L5.5 8.5L9.5 4.5" stroke="white" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Toutes les sections sont complètes — vous pouvez soumettre
+        </div>
+        <button class="btn-save" (click)="saveSection()" [disabled]="saving">
+          <span *ngIf="!saving">Enregistrer</span>
+          <span *ngIf="saving">...</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>

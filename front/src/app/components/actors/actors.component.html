@@ -1,0 +1,306 @@
+<!-- Toast -->
+<div class="toast-success" *ngIf="success">
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+    <circle cx="7" cy="7" r="6" fill="#1D9E75"/>
+    <path d="M4.5 7L6.5 9L9.5 5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+  {{ success }}
+</div>
+
+<!-- Breadcrumb -->
+<div class="breadcrumb">
+  <button class="back-btn" (click)="goBack()">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <path d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Organismes
+  </button>
+  <span class="sep">/</span>
+  <span class="current">{{ organism?.nom }}</span>
+</div>
+
+<!-- Organism info card -->
+<div class="org-info-card" *ngIf="organism">
+  <div class="org-header">
+    <div class="org-avatar-lg">{{ organism.nom[0].toUpperCase() }}</div>
+    <div>
+      <h2 class="org-title">{{ organism.nom }}</h2>
+      <div class="org-meta">
+        <span *ngIf="organism.ville">{{ organism.ville }}</span>
+        <span *ngIf="organism.secteur" class="meta-sep">·</span>
+        <span *ngIf="organism.secteur">{{ organism.secteur }}</span>
+        <span *ngIf="organism.date_audit" class="meta-sep">·</span>
+        <span *ngIf="organism.date_audit">Audit : {{ organism.date_audit | date:'dd/MM/yyyy' }}</span>
+      </div>
+    </div>
+  </div>
+  <div class="org-stats">
+    <div class="mini-stat">
+      <span class="ms-num">{{ activeCount }}</span>
+      <span class="ms-label">Acteurs actifs</span>
+    </div>
+    <div class="mini-stat">
+      <span class="ms-num">{{ uniqueRoles }}</span>
+      <span class="ms-label">Rôles distincts</span>
+    </div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <div class="toolbar-left">
+    <div class="search-box">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <circle cx="5.5" cy="5.5" r="4" stroke="currentColor" stroke-width="1.3"/>
+        <line x1="8.5" y1="8.5" x2="11.5" y2="11.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      </svg>
+      <input
+        type="text"
+        placeholder="Rechercher un acteur..."
+        [(ngModel)]="searchTerm"
+        (input)="search()"
+      />
+    </div>
+    <select class="filter-role" [(ngModel)]="filterRole" (change)="search()">
+      <option value="">Tous les rôles</option>
+      <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
+    </select>
+  </div>
+  <button class="btn-create" (click)="openCreate()">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+      <line x1="6.5" y1="1.5" x2="6.5" y2="11.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <line x1="1.5" y1="6.5" x2="11.5" y2="6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    Ajouter un acteur
+  </button>
+</div>
+
+<!-- Loading -->
+<div class="loading-state" *ngIf="loading">
+  <div class="spinner"></div>
+  <span>Chargement...</span>
+</div>
+
+<!-- Empty -->
+<div class="empty-state" *ngIf="!loading && filtered.length === 0">
+  <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+    <circle cx="20" cy="15" r="8" stroke="#d1d5db" stroke-width="1.5"/>
+    <path d="M6 36C6 28.3 12.3 22 20 22C27.7 22 34 28.3 34 36" stroke="#d1d5db" stroke-width="1.5" stroke-linecap="round"/>
+  </svg>
+  <p class="empty-title">Aucun acteur</p>
+  <p class="empty-desc">Ajoutez les acteurs SMSI/PIMS pour cet organisme</p>
+  <button class="btn-create" (click)="openCreate()">Ajouter un acteur</button>
+</div>
+
+<!-- Actors table -->
+<div class="actors-table-wrap" *ngIf="!loading && filtered.length > 0">
+  <table class="actors-table">
+    <thead>
+      <tr>
+        <th>Acteur</th>
+        <th>Rôle</th>
+        <th>Contact</th>
+        <th>Statut</th>
+        <th>Dernière connexion</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let actor of filtered" [class.inactive-row]="!actor.is_active">
+        <td class="actor-cell">
+          <div class="actor-avatar" [class]="'color-' + getRoleColor(actor.role)">
+            {{ getInitials(actor) }}
+          </div>
+          <div class="actor-info">
+            <span class="actor-name">{{ actor.prenom }} {{ actor.nom }}</span>
+          </div>
+        </td>
+        <td>
+          <span class="role-badge" [class]="'badge-' + getRoleColor(actor.role)">
+            {{ getRoleLabel(actor.role) }}
+          </span>
+            <!-- Afficher le processus si pilote -->
+  <div *ngIf="actor.role === 'pilote_processus' && actor.processus_pilote"
+    style="font-size:11px; color:#6b7280; margin-top:3px;">
+    {{ actor.processus_pilote }}
+  </div>
+        </td>
+        <td class="contact-cell">
+          <span>{{ actor.email }}</span>
+          <span class="phone" *ngIf="actor.telephone">{{ actor.telephone }}</span>
+        </td>
+        <td>
+          <span class="status-dot" [class.on]="actor.is_active" [class.off]="!actor.is_active">
+            {{ actor.is_active ? 'Actif' : 'Inactif' }}
+          </span>
+        </td>
+        <td class="date-cell">
+          {{ actor.last_login ? (actor.last_login | date:'dd/MM/yy HH:mm') : '—' }}
+        </td>
+        <td>
+          <div class="row-actions">
+            <button class="btn-icon edit" (click)="openEdit(actor, $event)" title="Modifier">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M9 2L11 4L4 11H2V9L9 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <button class="btn-icon reset" (click)="resetPassword(actor, $event)" title="Réinitialiser mdp">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 6.5C2 4 4 2 6.5 2C8.5 2 10.2 3.2 11 5M11 5V2.5M11 5H8.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M11 6.5C11 9 9 11 6.5 11C4.5 11 2.8 9.8 2 8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="btn-icon delete" (click)="openDelete(actor, $event)" title="Désactiver">
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                <path d="M2 3.5H11M4.5 3.5V2.5H8.5V3.5M5 6V10M8 6V10M3 3.5L3.5 11H9.5L10 3.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ═══ MODAL ACTEUR ═══ -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ editMode ? 'Modifier l\'acteur' : 'Nouvel acteur' }}</h2>
+      <button class="modal-close" (click)="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body" [formGroup]="form">
+      <div class="alert-error" *ngIf="error">{{ error }}</div>
+
+      <!-- Mot de passe temporaire -->
+      <div class="temp-pwd-box" *ngIf="tempPassword">
+        <div class="temp-pwd-title">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <circle cx="7" cy="7" r="6" fill="#1D9E75"/>
+            <path d="M4.5 7L6.5 9L9.5 5" stroke="white" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          Acteur créé avec succès
+        </div>
+        <p class="temp-pwd-desc">Communiquez ce mot de passe temporaire à l'acteur :</p>
+        <div class="pwd-display">
+          <code>{{ tempPassword }}</code>
+        </div>
+        <p class="temp-pwd-warn">⚠️ Ce mot de passe ne sera affiché qu'une seule fois.</p>
+      </div>
+
+      <div *ngIf="!tempPassword">
+        <div class="form-row two-cols">
+          <div class="field required">
+            <label>Prénom</label>
+            <input formControlName="prenom" placeholder="Jean" />
+            <span class="err" *ngIf="form.get('prenom')?.invalid && form.get('prenom')?.touched">Requis</span>
+          </div>
+          <div class="field required">
+            <label>Nom</label>
+            <input formControlName="nom" placeholder="Dupont" />
+            <span class="err" *ngIf="form.get('nom')?.invalid && form.get('nom')?.touched">Requis</span>
+          </div>
+        </div>
+
+        <div class="field required">
+          <label>Email</label>
+          <input formControlName="email" placeholder="jean.dupont@organisme.fr" [attr.disabled]="editMode ? true : null"/>
+          <span class="err" *ngIf="form.get('email')?.invalid && form.get('email')?.touched">Email invalide</span>
+        </div>
+
+        <div class="field required">
+          <label>Rôle</label>
+          <select formControlName="role">
+            <option value="">Sélectionner un rôle...</option>
+            <option *ngFor="let r of roles" [value]="r.value">{{ r.label }}</option>
+          </select>
+          <span class="err" *ngIf="form.get('role')?.invalid && form.get('role')?.touched">Requis</span>
+        </div>
+        <div class="form-row" *ngIf="form.get('role')?.value === 'pilote_processus'">
+  <div class="field required">
+    <label>Processus piloté</label>
+    <input
+      formControlName="processus_pilote"
+      placeholder="Ex: Gestion des incidents, Contrôle d'accès..."
+    />
+    <span class="err"
+      *ngIf="form.get('processus_pilote')?.invalid && form.get('processus_pilote')?.touched">
+      Requis
+    </span>
+  </div>
+</div>
+        <div class="field">
+          <label>Téléphone</label>
+          <input formControlName="telephone" placeholder="+33 6 12 34 56 78" />
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeModal()">
+        {{ tempPassword ? 'Fermer' : 'Annuler' }}
+      </button>
+      <button class="btn-submit" *ngIf="!tempPassword" (click)="submit()" [disabled]="submitting">
+        <span *ngIf="!submitting">{{ editMode ? 'Enregistrer' : 'Créer l\'acteur' }}</span>
+        <span *ngIf="submitting">...</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL RESET PWD ═══ -->
+<div class="modal-overlay" *ngIf="showReset" (click)="closeModal()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Réinitialiser le mot de passe</h2>
+      <button class="modal-close" (click)="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="delete-msg">
+        Réinitialiser le mot de passe de
+        <strong>{{ selectedActor?.prenom }} {{ selectedActor?.nom }}</strong> ?
+        Un mot de passe temporaire sera généré.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeModal()">Annuler</button>
+      <button class="btn-submit" (click)="confirmReset()">Réinitialiser</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MODAL SUPPRESSION ═══ -->
+<div class="modal-overlay" *ngIf="showDelete" (click)="closeModal()">
+  <div class="modal modal-sm" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>Désactiver l'acteur</h2>
+      <button class="modal-close" (click)="closeModal()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <line x1="3" y1="3" x2="13" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="13" y1="3" x2="3" y2="13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p class="delete-msg">
+        Voulez-vous désactiver
+        <strong>{{ selectedActor?.prenom }} {{ selectedActor?.nom }}</strong> ?
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeModal()">Annuler</button>
+      <button class="btn-delete" (click)="confirmDelete()">Désactiver</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,102 @@
+<div class="dashboard-layout" [class.collapsed]="sidebarCollapsed">
+
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-mark">
+        <div class="brand-icon">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 1.5L16 5.5V12.5L9 16.5L2 12.5V5.5L9 1.5Z" stroke="white" stroke-width="1.4" fill="none"/>
+            <circle cx="9" cy="9" r="2.5" fill="white"/>
+          </svg>
+        </div>
+        <div class="brand-text" *ngIf="!sidebarCollapsed">
+          <span class="brand-name">SMSI · PIMS</span>
+          <span class="brand-ver">v1.0</span>
+        </div>
+      </div>
+      <button class="collapse-btn" (click)="toggleSidebar()">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path *ngIf="!sidebarCollapsed" d="M9 2L4 7L9 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path *ngIf="sidebarCollapsed"  d="M5 2L10 7L5 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <nav class="sidebar-nav">
+      <ng-container *ngFor="let item of navItems">
+
+        <!-- Séparateur de section -->
+        <div class="nav-section-label" *ngIf="!sidebarCollapsed && item.clause">
+          {{ item.clause }}
+        </div>
+
+        <!-- Item cliquable -->
+        <div *ngIf="!item.disabled"
+          class="nav-item"
+          [class.active]="isActive(item.route)"
+          (click)="navigate(item)"
+          [title]="item.label">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">{{ item.label }}</span>
+        </div>
+
+        <!-- Item désactivé (bientôt) -->
+        <div *ngIf="item.disabled"
+          class="nav-item disabled"
+          [title]="item.clause + ' — ' + item.label">
+          <svg class="nav-icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2 2"/>
+          </svg>
+          <span class="nav-label" *ngIf="!sidebarCollapsed">
+            {{ item.label }}
+            <span class="clause-tag">{{ item.clause }}</span>
+          </span>
+          <span class="soon-badge" *ngIf="!sidebarCollapsed">Bientôt</span>
+        </div>
+
+      </ng-container>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-section" (click)="toggleUserMenu()">
+        <div class="user-avatar">{{ userInitials }}</div>
+        <div class="user-info" *ngIf="!sidebarCollapsed">
+          <span class="user-name">{{ currentUser?.prenom }} {{ currentUser?.nom }}</span>
+          <span class="user-role">{{ roleLabel }}</span>
+        </div>
+      </div>
+      <div class="user-menu" *ngIf="showUserMenu && !sidebarCollapsed">
+        <div class="menu-item" (click)="logout()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+            <path d="M5 2H2V11H5M8 4L11 6.5L8 9M11 6.5H5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Déconnexion
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title">
+          {{ isActive('/dashboard/organisms') ? 'Organismes audités' :
+             isActive('/dashboard/clause4')   ? 'Clause 4 — Contexte' : 'Tableau de bord' }}
+        </h1>
+      </div>
+      <div class="topbar-right">
+        <div class="norm-pills">
+          <span class="norm-pill">ISO 27001</span>
+          <span class="norm-pill">ISO 27701</span>
+          <span class="norm-pill">RGPD</span>
+        </div>
+      </div>
+    </header>
+    <div class="content-area">
+      <router-outlet></router-outlet>
+    </div>
+  </main>
+
+</div>
